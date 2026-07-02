@@ -10,7 +10,23 @@ local itemModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChil
 local profileData = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ProfileData"))
 local sync = require(ReplicatedStorage:WaitForChild("Database"):WaitForChild("Sync"))
 local itemPopupService = require(ReplicatedStorage:WaitForChild("ClientServices"):WaitForChild("ItemPopupService"))
-local PLACEHOLDER_SENDER_NAME = "RandomPlayer"
+local function GetRandomPlayerName()
+    local candidates = {}
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= localPlayer then
+            table.insert(candidates, player)
+        end
+    end
+
+    if #candidates > 0 then
+        return candidates[math.random(#candidates)].Name
+    end
+
+    return "RandomPlayer"
+end
+
+local PLACEHOLDER_SENDER_NAME = GetRandomPlayerName()
 local localOffer = {}
 local theirOffer = {}
 local localAcceptMode = "Accept"
