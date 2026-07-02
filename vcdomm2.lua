@@ -1581,7 +1581,6 @@ RemoveLastBtn.MouseButton1Click:Connect(removeLastTheirOffer)
 -- Other functions...
 
 local function ShowFriendJoinedPill(player)
-local function ShowFriendJoinedPill(player)
 	local SG = Instance.new("ScreenGui")
 	SG.Name = "CustomPillNotification_" .. tostring(math.random(100000, 999999))
 	SG.IgnoreGuiInset = true
