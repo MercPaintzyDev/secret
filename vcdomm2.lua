@@ -1684,7 +1684,6 @@ local function ShowFriendJoinedPill(player)
 		SG:Destroy()
 	end)
   end
-end
 
 -- ==================== SETTINGS TAB ====================
 
