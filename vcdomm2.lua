@@ -1581,7 +1581,110 @@ RemoveLastBtn.MouseButton1Click:Connect(removeLastTheirOffer)
 -- Other functions...
 
 local function ShowFriendJoinedPill(player)
-    -- paste the entire function here
+local function ShowFriendJoinedPill(player)
+	local SG = Instance.new("ScreenGui")
+	SG.Name = "CustomPillNotification_" .. tostring(math.random(100000, 999999))
+	SG.IgnoreGuiInset = true
+	SG.ResetOnSpawn = false
+	SG.DisplayOrder = 999999
+
+	local success, CoreGui = pcall(function()
+		return game:GetService("CoreGui")
+	end)
+
+	SG.Parent = success and CoreGui or localPlayer:WaitForChild("PlayerGui")
+
+	local MainPill = Instance.new("Frame")
+	MainPill.Parent = SG
+	MainPill.Size = UDim2.new(0, 400, 0, 52)
+	MainPill.Position = UDim2.new(0.5, -200, 0, -80)
+	MainPill.BackgroundColor3 = Color3.fromRGB(56, 59, 66)
+	MainPill.BorderSizePixel = 0
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 9)
+	Corner.Parent = MainPill
+
+	local Ring = Instance.new("Frame")
+	Ring.Parent = MainPill
+	Ring.Size = UDim2.new(0, 34, 0, 34)
+	Ring.Position = UDim2.new(0, 12, 0.5, -17)
+	Ring.BackgroundTransparency = 1
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Parent = Ring
+	Stroke.Color = Color3.fromRGB(0, 170, 255)
+	Stroke.Thickness = 1
+
+	local RingCorner = Instance.new("UICorner")
+	RingCorner.CornerRadius = UDim.new(1, 0)
+	RingCorner.Parent = Ring
+
+	local AvatarBg = Instance.new("Frame")
+	AvatarBg.Parent = Ring
+	AvatarBg.Size = UDim2.new(0, 31, 0, 31)
+	AvatarBg.Position = UDim2.new(0.5, -15.5, 0.5, -15.5)
+	AvatarBg.BackgroundColor3 = Color3.fromRGB(98, 104, 101)
+	AvatarBg.BorderSizePixel = 0
+
+	local AvatarCorner = Instance.new("UICorner")
+	AvatarCorner.CornerRadius = UDim.new(1, 0)
+	AvatarCorner.Parent = AvatarBg
+
+	local Avatar = Instance.new("ImageLabel")
+	Avatar.Parent = AvatarBg
+	Avatar.Size = UDim2.new(1, 0, 1, 0)
+	Avatar.BackgroundTransparency = 1
+	Avatar.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
+
+	local AvatarImageCorner = Instance.new("UICorner")
+	AvatarImageCorner.CornerRadius = UDim.new(1, 0)
+	AvatarImageCorner.Parent = Avatar
+
+	local Text = Instance.new("TextLabel")
+	Text.Parent = MainPill
+	Text.BackgroundTransparency = 1
+	Text.Position = UDim2.new(0, 56, 0, 0)
+	Text.Size = UDim2.new(1, -66, 1, 0)
+	Text.Font = Enum.Font.GothamBold
+	Text.RichText = true
+	Text.TextSize = 15
+	Text.TextColor3 = Color3.fromRGB(245, 245, 245)
+	Text.TextXAlignment = Enum.TextXAlignment.Left
+	Text.Text = "<b>" .. player.Name .. "</b> joined the game"
+
+	local ok, image = pcall(function()
+		return Players:GetUserThumbnailAsync(
+			player.UserId,
+			Enum.ThumbnailType.HeadShot,
+			Enum.ThumbnailSize.Size48x48
+		)
+	end)
+
+	if ok then
+		Avatar.Image = image
+	end
+
+	local Down = TweenService:Create(
+		MainPill,
+		TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{Position = UDim2.new(0.5, -200, 0, 25)}
+	)
+
+	local Up = TweenService:Create(
+		MainPill,
+		TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{Position = UDim2.new(0.5, -200, 0, -80)}
+	)
+
+	Down:Play()
+
+	task.delay(5, function()
+		Up:Play()
+		Up.Completed:Wait()
+		SG:Destroy()
+	end)
+  end
 end
 
 -- ==================== SETTINGS TAB ====================
