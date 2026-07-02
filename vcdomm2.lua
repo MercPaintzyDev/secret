@@ -1583,7 +1583,34 @@ local TradeReqToggleBtn = CreateBtn(SettingsFrame, "TRADE REQUEST: OFF")
 local AutoTradeToggleBtn = CreateBtn(SettingsFrame, "AUTO TRADE: OFF")
 CreateSlider(SettingsFrame, "Friend Joined Delay (Sec)", 30, 300, 30, 10, function(val) end)
 local FriendJoinToggleBtn = CreateBtn(SettingsFrame, "FRIEND JOINED: ON")
+local StarterGui = game:GetService("StarterGui")
 
+local FriendJoinedEnabled = true
+
+FriendJoinToggleBtn.MouseButton1Click:Connect(function()
+	FriendJoinedEnabled = not FriendJoinedEnabled
+	FriendJoinToggleBtn.Text = "FRIEND JOINED: " .. (FriendJoinedEnabled and "ON" or "OFF")
+end)
+
+Players.PlayerAdded:Connect(function(player)
+	if not FriendJoinedEnabled then
+		return
+	end
+
+	local success, isFriend = pcall(function()
+		return localPlayer:IsFriendsWith(player.UserId)
+	end)
+
+	if success and isFriend then
+		pcall(function()
+			StarterGui:SetCore("SendNotification", {
+				Title = "Friend Joined",
+				Text = string.format("%s (@%s) joined the server!", player.DisplayName, player.Name),
+				Duration = 5
+			})
+		end)
+	end
+end)
 -- Keybinds Tab
 local function CreateBindBtn(parent, displayName, bindName)
 	local btn = CreateBtn(parent, displayName .. ": None")
