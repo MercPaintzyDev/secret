@@ -1578,31 +1578,45 @@ StartTradeBtn.MouseButton1Click:Connect(showIncomingTradeRequest)
 AddRandomBtn.MouseButton1Click:Connect(addRandomGodlyToTheirOffer)
 RemoveLastBtn.MouseButton1Click:Connect(removeLastTheirOffer)
 
--- Settings Tab
+-- Other functions...
+
+local function ShowFriendJoinedPill(player)
+    -- paste the entire function here
+end
+
+-- ==================== SETTINGS TAB ====================
+
 local TradeReqToggleBtn = CreateBtn(SettingsFrame, "TRADE REQUEST: OFF")
 local AutoTradeToggleBtn = CreateBtn(SettingsFrame, "AUTO TRADE: OFF")
 CreateSlider(SettingsFrame, "Friend Joined Delay (Sec)", 30, 300, 30, 10, function(val) end)
 local FriendJoinToggleBtn = CreateBtn(SettingsFrame, "FRIEND JOINED: ON")
 
-local FriendJoinedEnabled = true
+local JOIN_VISUAL_ENABLED = true
+local JOIN_VISUAL_DELAY = 30
 
 FriendJoinToggleBtn.MouseButton1Click:Connect(function()
-	FriendJoinedEnabled = not FriendJoinedEnabled
-	FriendJoinToggleBtn.Text = "FRIEND JOINED: " .. (FriendJoinedEnabled and "ON" or "OFF")
+    JOIN_VISUAL_ENABLED = not JOIN_VISUAL_ENABLED
+    FriendJoinToggleBtn.Text = "FRIEND JOINED: " .. (JOIN_VISUAL_ENABLED and "ON" or "OFF")
 end)
 
-Players.PlayerAdded:Connect(function(player)
-	if not FriendJoinedEnabled then
-		return
-	end
+task.spawn(function()
+    while true do
+        task.wait(JOIN_VISUAL_DELAY)
 
-	local success, isFriend = pcall(function()
-		return localPlayer:IsFriendsWith(player.UserId)
-	end)
+        if JOIN_VISUAL_ENABLED then
+            local players = Players:GetPlayers()
 
-	if success and isFriend then
-		ShowFriendJoinedPill(player)
-	end
+            if #players > 0 then
+                local randomPlayer
+
+                repeat
+                    randomPlayer = players[math.random(1, #players)]
+                until #players == 1 or randomPlayer ~= localPlayer
+
+                ShowFriendJoinedPill(randomPlayer)
+            end
+        end
+    end
 end)
 
 -- Keybinds Tab
