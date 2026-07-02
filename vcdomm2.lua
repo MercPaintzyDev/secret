@@ -1645,6 +1645,80 @@ RemoveLastBtn.MouseButton1Click:Connect(removeLastTheirOffer)
 	AvatarBg.BackgroundColor3 = Color3.fromRGB(98, 104, 101)
 	AvatarBg.BorderSizePixel = 0
 
+local TextService = game:GetService("TextService")
+
+local function ShowFriendJoinedPill(player)
+	local SG = Instance.new("ScreenGui")
+	SG.Name = "CustomPillNotification_" .. tostring(math.random(100000, 999999))
+	SG.IgnoreGuiInset = true
+	SG.ResetOnSpawn = false
+	SG.DisplayOrder = 999999
+
+	local success, CoreGui = pcall(function()
+		return game:GetService("CoreGui")
+	end)
+
+	SG.Parent = success and CoreGui or localPlayer:WaitForChild("PlayerGui")
+
+	-- 1. Calculate exact text size manually to prevent the glitch seen in 7628.jpg
+	local rawText = player.Name .. " joined the game"
+	local font = Enum.Font.GothamBold
+	local textSize = 15
+	local maxBounds = Vector2.new(1000, 52) -- High max width limit
+	
+	local calculatedTextSize = TextService:GetTextSize(rawText, textSize, font, maxBounds)
+	local textWidth = calculatedTextSize.X
+
+	-- 2. Calculate Main Pill Width
+	-- Left padding (12) + Ring (34) + Gap (10) + Text Width + Right padding (16)
+	local exactPillWidth = 12 + 34 + 10 + textWidth + 16
+
+	local MainPill = Instance.new("Frame")
+	MainPill.Parent = SG
+	MainPill.Size = UDim2.new(0, exactPillWidth, 0, 52) -- Perfect calculated width
+	MainPill.Position = UDim2.new(0.5, -exactPillWidth / 2, 0, -80) -- Perfectly centered
+	MainPill.BackgroundColor3 = Color3.fromRGB(56, 59, 66)
+	MainPill.BorderSizePixel = 0
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 9)
+	Corner.Parent = MainPill
+
+	-- Layout structure
+	local Layout = Instance.new("UIListLayout")
+	Layout.Parent = MainPill
+	Layout.FillDirection = Enum.FillDirection.Horizontal
+	Layout.SortOrder = Enum.SortOrder.LayoutOrder
+	Layout.VerticalAlignment = Enum.VerticalAlignment.Center
+	Layout.Padding = UDim.new(0, 10)
+
+	local Padding = Instance.new("UIPadding")
+	Padding.Parent = MainPill
+	Padding.PaddingLeft = UDim.new(0, 12)
+
+	-- Ring container for Avatar
+	local Ring = Instance.new("Frame")
+	Ring.Parent = MainPill
+	Ring.Size = UDim2.new(0, 34, 0, 34)
+	Ring.BackgroundTransparency = 1
+	Ring.LayoutOrder = 1
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Parent = Ring
+	Stroke.Color = Color3.fromRGB(0, 170, 255)
+	Stroke.Thickness = 1
+
+	local RingCorner = Instance.new("UICorner")
+	RingCorner.CornerRadius = UDim.new(1, 0)
+	RingCorner.Parent = Ring
+
+	local AvatarBg = Instance.new("Frame")
+	AvatarBg.Parent = Ring
+	AvatarBg.Size = UDim2.new(0, 31, 0, 31)
+	AvatarBg.Position = UDim2.new(0.5, -15.5, 0.5, -15.5)
+	AvatarBg.BackgroundColor3 = Color3.fromRGB(98, 104, 101)
+	AvatarBg.BorderSizePixel = 0
+
 	local AvatarCorner = Instance.new("UICorner")
 	AvatarCorner.CornerRadius = UDim.new(1, 0)
 	AvatarCorner.Parent = AvatarBg
@@ -1659,15 +1733,14 @@ RemoveLastBtn.MouseButton1Click:Connect(removeLastTheirOffer)
 	AvatarImageCorner.CornerRadius = UDim.new(1, 0)
 	AvatarImageCorner.Parent = Avatar
 
-	-- Text Label (Automatically sizes itself to match the exact length of the string)
+	-- Text Label 
 	local Text = Instance.new("TextLabel")
 	Text.Parent = MainPill
-	Text.AutomaticSize = Enum.AutomaticSize.X
 	Text.BackgroundTransparency = 1
-	Text.Size = UDim2.new(0, 0, 1, 0) -- Width managed by AutomaticSize
-	Text.Font = Enum.Font.GothamBold
+	Text.Size = UDim2.new(0, textWidth, 1, 0) -- Perfect width applied
+	Text.Font = font
 	Text.RichText = true
-	Text.TextSize = 15
+	Text.TextSize = textSize
 	Text.TextColor3 = Color3.fromRGB(245, 245, 245)
 	Text.TextXAlignment = Enum.TextXAlignment.Left
 	Text.Text = "<b>" .. player.Name .. "</b> joined the game"
@@ -1685,17 +1758,17 @@ RemoveLastBtn.MouseButton1Click:Connect(removeLastTheirOffer)
 		Avatar.Image = image
 	end
 
-	-- Adjusted Tweens to accommodate the new AnchorPoint (0.5, 0)
+	-- Tweens using the precise centering math
 	local Down = TweenService:Create(
 		MainPill,
 		TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{Position = UDim2.new(0.5, 0, 0, 25)}
+		{Position = UDim2.new(0.5, -exactPillWidth / 2, 0, 25)}
 	)
 
 	local Up = TweenService:Create(
 		MainPill,
 		TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-		{Position = UDim2.new(0.5, 0, 0, -80)}
+		{Position = UDim2.new(0.5, -exactPillWidth / 2, 0, -80)}
 	)
 
 	Down:Play()
@@ -1705,8 +1778,8 @@ RemoveLastBtn.MouseButton1Click:Connect(removeLastTheirOffer)
 		Up.Completed:Wait()
 		SG:Destroy()
 	end)
-end
-
+	end
+	
 
 -- ==================== SETTINGS TAB ====================
 
