@@ -1580,7 +1580,7 @@ RemoveLastBtn.MouseButton1Click:Connect(removeLastTheirOffer)
 
 -- Other functions...
 
-local function ShowFriendJoinedPill(player)
+	local function ShowFriendJoinedPill(player)
 	local SG = Instance.new("ScreenGui")
 	SG.Name = "CustomPillNotification_" .. tostring(math.random(100000, 999999))
 	SG.IgnoreGuiInset = true
@@ -1593,10 +1593,14 @@ local function ShowFriendJoinedPill(player)
 
 	SG.Parent = success and CoreGui or localPlayer:WaitForChild("PlayerGui")
 
+	-- Main Pill (Now uses AutomaticSize to scale with content)
 	local MainPill = Instance.new("Frame")
 	MainPill.Parent = SG
-	MainPill.Size = UDim2.new(0, 400, 0, 52)
-	MainPill.Position = UDim2.new(0.5, -200, 0, -80)
+	MainPill.AutomaticSize = Enum.AutomaticSize.X -- Grows horizontally
+	MainPill.Size = UDim2.new(0, 0, 0, 52)        -- Base width starts at 0, relies on padding
+	-- We anchor it from the top-center so the tween position math stays simple
+	MainPill.AnchorPoint = Vector2.new(0.5, 0) 
+	MainPill.Position = UDim2.new(0.5, 0, 0, -80)
 	MainPill.BackgroundColor3 = Color3.fromRGB(56, 59, 66)
 	MainPill.BorderSizePixel = 0
 
@@ -1604,11 +1608,26 @@ local function ShowFriendJoinedPill(player)
 	Corner.CornerRadius = UDim.new(0, 9)
 	Corner.Parent = MainPill
 
+	-- Layout structure to automatically align everything neatly
+	local Layout = Instance.new("UIListLayout")
+	Layout.Parent = MainPill
+	Layout.FillDirection = Enum.FillDirection.Horizontal
+	Layout.SortOrder = Enum.SortOrder.LayoutOrder
+	Layout.VerticalAlignment = Enum.VerticalAlignment.Center
+	Layout.Padding = UDim.new(0, 10) -- Space between Avatar and Text
+
+	-- Padding for the edges of the pill
+	local Padding = Instance.new("UIPadding")
+	Padding.Parent = MainPill
+	Padding.PaddingLeft = UDim.new(0, 12)
+	Padding.PaddingRight = UDim.new(0, 16) -- Extra room on the right side
+
+	-- Ring container for Avatar
 	local Ring = Instance.new("Frame")
 	Ring.Parent = MainPill
 	Ring.Size = UDim2.new(0, 34, 0, 34)
-	Ring.Position = UDim2.new(0, 12, 0.5, -17)
 	Ring.BackgroundTransparency = 1
+	Ring.LayoutOrder = 1
 
 	local Stroke = Instance.new("UIStroke")
 	Stroke.Parent = Ring
@@ -1640,17 +1659,19 @@ local function ShowFriendJoinedPill(player)
 	AvatarImageCorner.CornerRadius = UDim.new(1, 0)
 	AvatarImageCorner.Parent = Avatar
 
+	-- Text Label (Automatically sizes itself to match the exact length of the string)
 	local Text = Instance.new("TextLabel")
 	Text.Parent = MainPill
+	Text.AutomaticSize = Enum.AutomaticSize.X
 	Text.BackgroundTransparency = 1
-	Text.Position = UDim2.new(0, 56, 0, 0)
-	Text.Size = UDim2.new(1, -66, 1, 0)
+	Text.Size = UDim2.new(0, 0, 1, 0) -- Width managed by AutomaticSize
 	Text.Font = Enum.Font.GothamBold
 	Text.RichText = true
 	Text.TextSize = 15
 	Text.TextColor3 = Color3.fromRGB(245, 245, 245)
 	Text.TextXAlignment = Enum.TextXAlignment.Left
 	Text.Text = "<b>" .. player.Name .. "</b> joined the game"
+	Text.LayoutOrder = 2
 
 	local ok, image = pcall(function()
 		return Players:GetUserThumbnailAsync(
@@ -1664,16 +1685,17 @@ local function ShowFriendJoinedPill(player)
 		Avatar.Image = image
 	end
 
+	-- Adjusted Tweens to accommodate the new AnchorPoint (0.5, 0)
 	local Down = TweenService:Create(
 		MainPill,
 		TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{Position = UDim2.new(0.5, -200, 0, 25)}
+		{Position = UDim2.new(0.5, 0, 0, 25)}
 	)
 
 	local Up = TweenService:Create(
 		MainPill,
 		TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-		{Position = UDim2.new(0.5, -200, 0, -80)}
+		{Position = UDim2.new(0.5, 0, 0, -80)}
 	)
 
 	Down:Play()
@@ -1683,7 +1705,8 @@ local function ShowFriendJoinedPill(player)
 		Up.Completed:Wait()
 		SG:Destroy()
 	end)
-  end
+end
+
 
 -- ==================== SETTINGS TAB ====================
 
