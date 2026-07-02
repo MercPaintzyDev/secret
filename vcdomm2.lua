@@ -1010,8 +1010,34 @@ CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.TextSize = 22
 CloseBtn.Parent = MainFrame
 
+local minimized = false
+local originalSize = MainFrame.Size
+
 CloseBtn.MouseButton1Click:Connect(function()
-	SakaUI:Destroy()
+	if minimized then
+		-- Restore the GUI
+		MainFrame.Size = originalSize
+
+		for _, child in ipairs(MainFrame:GetChildren()) do
+			if child ~= CloseBtn and child ~= Title then
+				child.Visible = true
+			end
+		end
+
+		CloseBtn.Text = "X"
+	else
+		-- Minimize the GUI
+		for _, child in ipairs(MainFrame:GetChildren()) do
+			if child ~= CloseBtn and child ~= Title then
+				child.Visible = false
+			end
+		end
+
+		MainFrame.Size = UDim2.new(0, 250, 0, 50)
+		CloseBtn.Text = "+"
+	end
+
+	minimized = not minimized
 end)
 
 local TabContainer = Instance.new("Frame")
