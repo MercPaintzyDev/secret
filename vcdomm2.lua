@@ -1,43 +1,63 @@
--- Verbatim file reference tracking: "vcdomm2.lua"
+-- ==================== FIXED EXECUTOR INITIALIZATION LAYER ====================
+-- Forces Delta/Xeno to handle environment calls gracefully without stalling execution
+if not game:IsLoaded() then 
+    game.Loaded:Wait() 
+end
+
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextService = game:GetService("TextService")
-local localPlayer = Players.LocalPlayer
+local localPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
--- Safe validation check for CoreGui access permissions
+-- Xeno/Delta CoreGui Hook Fix
 local RealCoreGui = nil
-pcall(function()
+local success, err = pcall(function()
 	local test = CoreGui.Name
 	RealCoreGui = CoreGui
 end)
-local TargetGuiLayer = RealCoreGui or localPlayer:WaitForChild("PlayerGui", 10)
 
--- Strict 5-second timeout boundaries to prevent permanent infinite script stalls
-local modulesFolder = ReplicatedStorage:WaitForChild("Modules", 5)
+-- Fallback safely to PlayerGui if executor lacks high-level identity permissions
+local TargetGuiLayer = RealCoreGui or (localPlayer and localPlayer:WaitForChild("PlayerGui", 15))
+if not TargetGuiLayer then
+    warn("[Hax4You Fatal] Executor environment restrictions blocked GUI access.")
+    return
+end
+
+-- EXTENDED TIMEOUT LAYER: Prevents Delta/Xeno from killing the thread prematurely 
+local modulesFolder = ReplicatedStorage:WaitForChild("Modules", 15)
 if not modulesFolder then
 	warn("[Hax4You Error] 'Modules' folder not found in ReplicatedStorage. Terminating initialization.")
 	return
 end
 
-local tradeModule = modulesFolder:WaitForChild("TradeModule", 5) and require(modulesFolder.TradeModule)
-local inventoryModule = modulesFolder:WaitForChild("InventoryModule", 5) and require(modulesFolder.InventoryModule)
-local itemModule = modulesFolder:WaitForChild("ItemModule", 5) and require(modulesFolder.ItemModule)
-local profileData = modulesFolder:WaitForChild("ProfileData", 5) and require(modulesFolder.ProfileData)
-
-local databaseFolder = ReplicatedStorage:WaitForChild("Database", 5)
-local sync = databaseFolder and databaseFolder:WaitForChild("Sync", 5) and require(databaseFolder.Sync)
-
-local clientServices = ReplicatedStorage:WaitForChild("ClientServices", 5)
-local itemPopupService = clientServices and clientServices:WaitForChild("ItemPopupService", 5) and require(clientServices.ItemPopupService)
-
-if not (tradeModule and inventoryModule and itemModule and profileData and sync) then
-	warn("[Hax4You Error] Critical game dependencies failed to load within buffer limits. Execution stopped.")
-	return
+-- Wrapped requires to stop execution crashes if a module returns nil
+local function safeRequire(name)
+    local obj = modulesFolder:WaitForChild(name, 10)
+    if obj then
+        local ok, mod = pcall(require, obj)
+        if ok then return mod end
+    end
+    return nil
 end
 
+local tradeModule = safeRequire("TradeModule")
+local inventoryModule = safeRequire("InventoryModule")
+local itemModule = safeRequire("ItemModule")
+local profileData = safeRequire("ProfileData")
+
+local databaseFolder = ReplicatedStorage:WaitForChild("Database", 10)
+local sync = databaseFolder and databaseFolder:WaitForChild("Sync", 10) and safeRequire("Sync")
+
+local clientServices = ReplicatedStorage:WaitForChild("ClientServices", 10)
+local itemPopupService = clientServices and clientServices:WaitForChild("ItemPopupService", 10) and safeRequire("ItemPopupService")
+
+if not (tradeModule and inventoryModule and itemModule and profileData and sync) then
+	warn("[Hax4You Error] Critical game dependencies failed to load within extended limits. Execution stopped.")
+	return
+end
 -- ==================== HAX4YOU COMPACT THEME VARS ====================
 local Theme = {
 	MainBackground = Color3.fromRGB(15, 15, 18),
