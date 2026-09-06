@@ -41,7 +41,6 @@ local function applyCreatorTag(character)
     billboard.AlwaysOnTop = true
     billboard.LightInfluence = 0
     billboard.MaxDistance = 150
-    -- Use Scale instead of Offset so it scales with camera zoom
     billboard.Size = UDim2.fromScale(2.5, 0.5)
     billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.3, 0)
     billboard.Parent = head
@@ -270,19 +269,21 @@ local COLORS = {
     white = Color3.fromRGB(239, 227, 248),
 }
 
--- ====== CHATHEAD TOGGLE ======
-local chatHead = create("ImageButton", {
-    Name = "ChatHead",
-    Size = UDim2.fromOffset(55, 55),
-    Position = UDim2.fromOffset(10, 100),
+-- ====== FLOATING DOT (always visible) ======
+local floatingDot = create("ImageButton", {
+    Name = "FloatingDot",
+    Size = UDim2.fromOffset(20, 20),
+    Position = UDim2.fromOffset(15, 100),
     BackgroundColor3 = COLORS.purple,
     Image = "rbxassetid://6031090678",
     ImageColor3 = COLORS.white,
+    ImageTransparency = 0,
     ZIndex = 100,
     Visible = true,
+    BackgroundTransparency = 0,
 }, playerGui)
-corner(chatHead, 27)
-stroke(chatHead, COLORS.purpleBright, 0.3, 2)
+corner(floatingDot, 10)
+stroke(floatingDot, COLORS.purpleBright, 0.5, 2)
 
 -- ====== MAIN UI (COMPACT) ======
 local gui = create("ScreenGui", {
@@ -298,10 +299,10 @@ local panel = create("Frame", {
     AnchorPoint = Vector2.new(0, 0),
     BackgroundColor3 = COLORS.panel,
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(10, 170),
+    Position = UDim2.fromOffset(45, 100),
     Size = UDim2.fromOffset(220, 0),
     ClipsDescendants = true,
-    Visible = false,
+    Visible = true,
     ZIndex = 50,
     BackgroundTransparency = 0,
 }, gui)
@@ -509,22 +510,31 @@ y = y + 22
 content.Size = UDim2.new(1, 0, 0, y + 10)
 panel.Size = UDim2.fromOffset(220, y + 10)
 
--- ====== CHATHEAD TOGGLE LOGIC ======
-local panelVisible = false
+-- ====== TOGGLE LOGIC (Dot expands to panel) ======
+local panelVisible = true
+local dotSize = 20
+local panelSize = 220
 
-chatHead.MouseButton1Click:Connect(function()
+floatingDot.MouseButton1Click:Connect(function()
     panelVisible = not panelVisible
-    panel.Visible = panelVisible
+    
     if panelVisible then
-        TweenService:Create(chatHead, TweenInfo.new(0.2), {
-            Size = UDim2.fromOffset(40, 40),
-            ImageColor3 = Color3.fromRGB(255, 200, 200)
+        -- Expand dot to full panel
+        panel.Visible = true
+        TweenService:Create(floatingDot, TweenInfo.new(0.15), {
+            Size = UDim2.fromOffset(panelSize, panelSize),
+            ImageColor3 = Color3.fromRGB(200, 200, 255)
+        }):Play()
+        TweenService:Create(panel, TweenInfo.new(0.15), {
+            Position = UDim2.fromOffset(panelSize + 10, floatingDot.Position.Y.Offset)
         }):Play()
     else
-        TweenService:Create(chatHead, TweenInfo.new(0.2), {
-            Size = UDim2.fromOffset(55, 55),
+        -- Shrink to dot
+        TweenService:Create(floatingDot, TweenInfo.new(0.15), {
+            Size = UDim2.fromOffset(20, 20),
             ImageColor3 = COLORS.white
         }):Play()
+        panel.Visible = false
     end
 end)
 
@@ -1154,12 +1164,12 @@ end)
 -- Start cycle automatically
 cycleTask = task.spawn(botCycle)
 
--- ====== DRAGGABLE CHATHEAD ======
+-- ====== DRAGGABLE DOT ======
 local dragData = { dragging = false, startPos = nil, startMouse = nil }
-chatHead.InputBegan:Connect(function(input)
+floatingDot.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragData.dragging = true
-        dragData.startPos = chatHead.Position
+        dragData.startPos = floatingDot.Position
         dragData.startMouse = input.Position
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
@@ -1173,7 +1183,7 @@ UserInputService.InputChanged:Connect(function(input)
     if not dragData.dragging then return end
     if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
     local delta = input.Position - dragData.startMouse
-    chatHead.Position = UDim2.new(
+    floatingDot.Position = UDim2.new(
         dragData.startPos.X.Scale,
         dragData.startPos.X.Offset + delta.X,
         dragData.startPos.Y.Scale,
@@ -1181,9 +1191,9 @@ UserInputService.InputChanged:Connect(function(input)
     )
     panel.Position = UDim2.new(
         0,
-        chatHead.Position.X.Offset,
+        floatingDot.Position.X.Offset + (panelVisible and 230 or 0),
         0,
-        chatHead.Position.Y.Offset + 65
+        floatingDot.Position.Y.Offset
     )
 end)
 
@@ -1191,14 +1201,35 @@ end)
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.F7 and gui.Parent then
         panelVisible = not panelVisible
-        panel.Visible = panelVisible
+        if panelVisible then
+            panel.Visible = true
+            TweenService:Create(floatingDot, TweenInfo.new(0.15), {
+                Size = UDim2.fromOffset(panelSize, panelSize),
+                ImageColor3 = Color3.fromRGB(200, 200, 255)
+            }):Play()
+            TweenService:Create(panel, TweenInfo.new(0.15), {
+                Position = UDim2.fromOffset(panelSize + 10, floatingDot.Position.Y.Offset)
+            }):Play()
+        else
+            TweenService:Create(floatingDot, TweenInfo.new(0.15), {
+                Size = UDim2.fromOffset(20, 20),
+                ImageColor3 = COLORS.white
+            }):Play()
+            panel.Visible = false
+        end
     end
 end)
 
 -- ====== CLOSE ON PANEL CLICK OUTSIDE ======
 local function closePanel()
-    panelVisible = false
-    panel.Visible = false
+    if panelVisible then
+        panelVisible = false
+        TweenService:Create(floatingDot, TweenInfo.new(0.15), {
+            Size = UDim2.fromOffset(20, 20),
+            ImageColor3 = COLORS.white
+        }):Play()
+        panel.Visible = false
+    end
 end
 
 UserInputService.InputBegan:Connect(function(input)
@@ -1209,7 +1240,7 @@ UserInputService.InputBegan:Connect(function(input)
             local panelSize = panel.AbsoluteSize
             if not (mousePos.X >= panelPos.X and mousePos.X <= panelPos.X + panelSize.X and
                     mousePos.Y >= panelPos.Y and mousePos.Y <= panelPos.Y + panelSize.Y) then
-                if not chatHead:IsHovering() then
+                if not floatingDot:IsHovering() then
                     closePanel()
                 end
             end
