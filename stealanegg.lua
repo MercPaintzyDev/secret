@@ -4,6 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
@@ -21,7 +22,7 @@ local random = Random.new()
 local ADMIN_USERNAME = "misfitsbsthree"
 local ADMIN_USER_ID = 10751598093
 
--- ====== ADMIN AVATAR WITH SCALING FIX ======
+-- ====== ADMIN AVATAR WITH NATURAL SCALING ======
 local identityState = _G.CartiAdminAbuseIdentityState or {}
 if identityState.CharacterAddedConnection then
     identityState.CharacterAddedConnection:Disconnect()
@@ -40,9 +41,10 @@ local function applyCreatorTag(character)
     billboard.Adornee = head
     billboard.AlwaysOnTop = true
     billboard.LightInfluence = 0
-    billboard.MaxDistance = 150
-    billboard.Size = UDim2.fromScale(2.5, 0.5)
-    billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.3, 0)
+    billboard.MaxDistance = 200
+    -- Use Offset so it scales naturally with camera zoom
+    billboard.Size = UDim2.fromOffset(180, 40)
+    billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.5, 0)
     billboard.Parent = head
     
     local title = Instance.new("TextLabel")
@@ -52,7 +54,8 @@ local function applyCreatorTag(character)
     title.Font = Enum.Font.GothamBlack
     title.Text = "👑 CREATOR 👑"
     title.TextColor3 = Color3.fromRGB(239, 42, 54)
-    title.TextSize = 25
+    title.TextSize = 20
+    title.TextScaled = true
     title.TextStrokeColor3 = Color3.new(0, 0, 0)
     title.TextStrokeTransparency = 0
     title.Parent = billboard
@@ -61,6 +64,20 @@ local function applyCreatorTag(character)
     textStroke.Color = Color3.new(0, 0, 0)
     textStroke.Thickness = 1.5
     textStroke.Parent = title
+    
+    -- Update size based on distance for natural feel
+    local connection
+    connection = RunService.Heartbeat:Connect(function()
+        if not head.Parent then
+            connection:Disconnect()
+            return
+        end
+        local distance = (head.Position - Camera.CFrame.Position).Magnitude
+        local scale = math.clamp(40 / distance, 0.3, 2)
+        billboard.Size = UDim2.fromOffset(180 * scale, 40 * scale)
+        billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.5 * scale, 0)
+    end)
+    
     return true
 end
 
@@ -269,10 +286,10 @@ local COLORS = {
     white = Color3.fromRGB(239, 227, 248),
 }
 
--- ====== FLOATING DOT (always visible) ======
-local floatingDot = create("ImageButton", {
-    Name = "FloatingDot",
-    Size = UDim2.fromOffset(20, 20),
+-- ====== FLOATING CIRCLE (always visible) ======
+local floatingCircle = create("ImageButton", {
+    Name = "FloatingCircle",
+    Size = UDim2.fromOffset(45, 45),
     Position = UDim2.fromOffset(15, 100),
     BackgroundColor3 = COLORS.purple,
     Image = "rbxassetid://6031090678",
@@ -282,10 +299,10 @@ local floatingDot = create("ImageButton", {
     Visible = true,
     BackgroundTransparency = 0,
 }, playerGui)
-corner(floatingDot, 10)
-stroke(floatingDot, COLORS.purpleBright, 0.5, 2)
+corner(floatingCircle, 22.5)
+stroke(floatingCircle, COLORS.purpleBright, 0.5, 2)
 
--- ====== MAIN UI (COMPACT) ======
+-- ====== MAIN UI (RESIZED - SMALLER) ======
 local gui = create("ScreenGui", {
     Name = "CartiAdminAbuseUI",
     ResetOnSpawn = false,
@@ -299,8 +316,8 @@ local panel = create("Frame", {
     AnchorPoint = Vector2.new(0, 0),
     BackgroundColor3 = COLORS.panel,
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(45, 100),
-    Size = UDim2.fromOffset(220, 0),
+    Position = UDim2.fromOffset(70, 100),
+    Size = UDim2.fromOffset(190, 0),
     ClipsDescendants = true,
     Visible = true,
     ZIndex = 50,
@@ -318,71 +335,102 @@ local content = create("Frame", {
 
 local y = 0
 
--- Title
-local titleLabel = create("TextLabel", {
+-- Title with X close button
+local titleFrame = create("Frame", {
     BackgroundTransparency = 1,
     Position = UDim2.fromOffset(0, y),
-    Size = UDim2.fromOffset(220, 25),
+    Size = UDim2.fromOffset(190, 28),
+    ZIndex = 10,
+}, content)
+
+create("TextLabel", {
+    BackgroundTransparency = 1,
+    Position = UDim2.fromOffset(0, 0),
+    Size = UDim2.fromOffset(160, 28),
     Font = Enum.Font.GothamBold,
-    Text = "⚡ ADMIN ABUSE",
+    Text = "⚡ ADMIN",
     TextColor3 = COLORS.white,
     TextSize = 13,
     TextXAlignment = Enum.TextXAlignment.Center,
     TextYAlignment = Enum.TextYAlignment.Center,
     ZIndex = 10,
-}, content)
-y = y + 28
+}, titleFrame)
+
+local closeBtn = create("TextButton", {
+    Name = "CloseBtn",
+    AutoButtonColor = false,
+    BackgroundColor3 = Color3.fromRGB(60, 20, 30),
+    BorderSizePixel = 0,
+    Position = UDim2.fromOffset(165, 2),
+    Size = UDim2.fromOffset(24, 24),
+    Font = Enum.Font.GothamBold,
+    Text = "✕",
+    TextColor3 = Color3.fromRGB(255, 100, 100),
+    TextSize = 14,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    TextYAlignment = Enum.TextYAlignment.Center,
+    ZIndex = 10,
+}, titleFrame)
+corner(closeBtn, 12)
+closeBtn.MouseEnter:Connect(function()
+    closeBtn.BackgroundColor3 = Color3.fromRGB(80, 20, 30)
+end)
+closeBtn.MouseLeave:Connect(function()
+    closeBtn.BackgroundColor3 = Color3.fromRGB(60, 20, 30)
+end)
+
+y = y + 32
 
 -- Divider
 create("Frame", {
     BackgroundColor3 = COLORS.line,
     BackgroundTransparency = 0.2,
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(10, y),
-    Size = UDim2.new(1, -20, 0, 1),
+    Position = UDim2.fromOffset(8, y),
+    Size = UDim2.new(1, -16, 0, 1),
 }, content)
-y = y + 8
+y = y + 6
 
 -- Telegram link
-local teleLabel = create("TextLabel", {
+create("TextLabel", {
     BackgroundTransparency = 1,
     Position = UDim2.fromOffset(0, y),
-    Size = UDim2.fromOffset(220, 18),
+    Size = UDim2.fromOffset(190, 16),
     Font = Enum.Font.Gotham,
     Text = "t.me/cookierealms",
     TextColor3 = COLORS.muted,
-    TextSize = 10,
+    TextSize = 9,
     TextXAlignment = Enum.TextXAlignment.Center,
     TextYAlignment = Enum.TextYAlignment.Center,
     ZIndex = 10,
 }, content)
-y = y + 22
+y = y + 20
 
 -- Quantity
 local qRow = create("Frame", {
     BackgroundColor3 = COLORS.surface,
     BackgroundTransparency = 0,
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(10, y),
-    Size = UDim2.fromOffset(200, 28),
+    Position = UDim2.fromOffset(8, y),
+    Size = UDim2.fromOffset(174, 26),
 }, content)
 corner(qRow, 4)
 create("TextLabel", {
     BackgroundTransparency = 1,
-    Position = UDim2.fromOffset(6, 0),
-    Size = UDim2.fromOffset(60, 28),
+    Position = UDim2.fromOffset(5, 0),
+    Size = UDim2.fromOffset(50, 26),
     Font = Enum.Font.Gotham,
     Text = "Qty:",
     TextColor3 = COLORS.text,
-    TextSize = 10,
+    TextSize = 9,
     TextXAlignment = Enum.TextXAlignment.Left,
     TextYAlignment = Enum.TextYAlignment.Center,
 }, qRow)
 local quantityInput = create("TextBox", {
     BackgroundColor3 = Color3.fromRGB(26, 10, 51),
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(66, 3),
-    Size = UDim2.fromOffset(128, 22),
+    Position = UDim2.fromOffset(55, 2),
+    Size = UDim2.fromOffset(113, 22),
     ClearTextOnFocus = false,
     Font = Enum.Font.Gotham,
     Text = "1",
@@ -392,33 +440,33 @@ local quantityInput = create("TextBox", {
     ZIndex = 10,
 }, qRow)
 corner(quantityInput, 3)
-y = y + 34
+y = y + 30
 
 -- Player
 local pRow = create("Frame", {
     BackgroundColor3 = COLORS.surface,
     BackgroundTransparency = 0,
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(10, y),
-    Size = UDim2.fromOffset(200, 28),
+    Position = UDim2.fromOffset(8, y),
+    Size = UDim2.fromOffset(174, 26),
 }, content)
 corner(pRow, 4)
 create("TextLabel", {
     BackgroundTransparency = 1,
-    Position = UDim2.fromOffset(6, 0),
-    Size = UDim2.fromOffset(60, 28),
+    Position = UDim2.fromOffset(5, 0),
+    Size = UDim2.fromOffset(50, 26),
     Font = Enum.Font.Gotham,
     Text = "Player:",
     TextColor3 = COLORS.text,
-    TextSize = 10,
+    TextSize = 9,
     TextXAlignment = Enum.TextXAlignment.Left,
     TextYAlignment = Enum.TextYAlignment.Center,
 }, pRow)
 local playerInput = create("TextBox", {
     BackgroundColor3 = Color3.fromRGB(26, 10, 51),
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(66, 3),
-    Size = UDim2.fromOffset(128, 22),
+    Position = UDim2.fromOffset(55, 2),
+    Size = UDim2.fromOffset(113, 22),
     ClearTextOnFocus = false,
     Font = Enum.Font.Gotham,
     PlaceholderColor3 = COLORS.muted,
@@ -430,7 +478,7 @@ local playerInput = create("TextBox", {
     ZIndex = 10,
 }, pRow)
 corner(playerInput, 3)
-y = y + 34
+y = y + 30
 
 -- Buttons (compact)
 local function makeBtn(text, yPos)
@@ -439,18 +487,18 @@ local function makeBtn(text, yPos)
         AutoButtonColor = false,
         BackgroundColor3 = COLORS.surface,
         BorderSizePixel = 0,
-        Position = UDim2.fromOffset(10, yPos),
-        Size = UDim2.fromOffset(200, 28),
+        Position = UDim2.fromOffset(8, yPos),
+        Size = UDim2.fromOffset(174, 24),
         Font = Enum.Font.GothamMedium,
         Text = text,
         TextColor3 = COLORS.text,
-        TextSize = 10,
+        TextSize = 9,
         TextXAlignment = Enum.TextXAlignment.Left,
         ZIndex = 10,
     }, content)
     corner(btn, 4)
     stroke(btn, COLORS.line, 0.5, 1)
-    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, btn)
+    create("UIPadding", { PaddingLeft = UDim.new(0, 6) }, btn)
     btn.MouseEnter:Connect(function()
         btn.BackgroundColor3 = Color3.fromRGB(45, 20, 75)
     end)
@@ -460,81 +508,84 @@ local function makeBtn(text, yPos)
     return btn
 end
 
-local btnSpawn = makeBtn("🥚 Spawn Eggs", y)
-y = y + 33
+local btnSpawn = makeBtn("🥚 Spawn", y)
+y = y + 28
 local btnSpawnPlayer = makeBtn("📤 Spawn to Player", y)
-y = y + 33
-local btnSpawnServer = makeBtn("🌍 Spawn in Server", y)
-y = y + 33
-local btnRift = makeBtn("🌌 Start Rift", y)
-y = y + 33
+y = y + 28
+local btnSpawnServer = makeBtn("🌍 Spawn Server", y)
+y = y + 28
+local btnRift = makeBtn("🌌 Rift", y)
+y = y + 28
 local btnAdmin = makeBtn("👑 Give Admin", y)
-y = y + 33
+y = y + 28
 
 local botInput = create("TextBox", {
     BackgroundColor3 = COLORS.surface,
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(10, y),
-    Size = UDim2.fromOffset(200, 28),
+    Position = UDim2.fromOffset(8, y),
+    Size = UDim2.fromOffset(174, 24),
     ClearTextOnFocus = false,
     Font = Enum.Font.Gotham,
     PlaceholderColor3 = COLORS.muted,
-    PlaceholderText = "Bot username",
+    PlaceholderText = "Bot name",
     Text = "",
     TextColor3 = COLORS.text,
-    TextSize = 10,
+    TextSize = 9,
     TextXAlignment = Enum.TextXAlignment.Center,
     ZIndex = 10,
 }, content)
 corner(botInput, 4)
-y = y + 33
+y = y + 28
 
 local btnBot = makeBtn("🤖 Create Bot", y)
-y = y + 33
+y = y + 28
 local btnCycle = makeBtn("⏯️ Stop Cycle", y)
-y = y + 33
+y = y + 28
 
 local statusLabel = create("TextLabel", {
     BackgroundTransparency = 1,
-    Position = UDim2.fromOffset(10, y),
-    Size = UDim2.fromOffset(200, 18),
+    Position = UDim2.fromOffset(8, y),
+    Size = UDim2.fromOffset(174, 16),
     Font = Enum.Font.Gotham,
     Text = "Cycle: Running",
     TextColor3 = COLORS.muted,
-    TextSize = 9,
+    TextSize = 8,
     TextXAlignment = Enum.TextXAlignment.Center,
     TextYAlignment = Enum.TextYAlignment.Center,
 }, content)
-y = y + 22
+y = y + 18
 
-content.Size = UDim2.new(1, 0, 0, y + 10)
-panel.Size = UDim2.fromOffset(220, y + 10)
+content.Size = UDim2.new(1, 0, 0, y + 6)
+panel.Size = UDim2.fromOffset(190, y + 6)
 
--- ====== TOGGLE LOGIC (Dot expands to panel) ======
+-- ====== TOGGLE LOGIC ======
 local panelVisible = true
-local dotSize = 20
-local panelSize = 220
 
-floatingDot.MouseButton1Click:Connect(function()
+closeBtn.MouseButton1Click:Connect(function()
+    panelVisible = false
+    panel.Visible = false
+    TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
+        Size = UDim2.fromOffset(45, 45),
+        ImageColor3 = COLORS.white
+    }):Play()
+end)
+
+floatingCircle.MouseButton1Click:Connect(function()
     panelVisible = not panelVisible
-    
+    panel.Visible = panelVisible
     if panelVisible then
-        -- Expand dot to full panel
-        panel.Visible = true
-        TweenService:Create(floatingDot, TweenInfo.new(0.15), {
-            Size = UDim2.fromOffset(panelSize, panelSize),
+        TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
+            Size = UDim2.fromOffset(35, 35),
             ImageColor3 = Color3.fromRGB(200, 200, 255)
         }):Play()
         TweenService:Create(panel, TweenInfo.new(0.15), {
-            Position = UDim2.fromOffset(panelSize + 10, floatingDot.Position.Y.Offset)
+            Position = UDim2.fromOffset(floatingCircle.Position.X.Offset + 55, floatingCircle.Position.Y.Offset - 10)
         }):Play()
     else
-        -- Shrink to dot
-        TweenService:Create(floatingDot, TweenInfo.new(0.15), {
-            Size = UDim2.fromOffset(20, 20),
+        TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
+            Size = UDim2.fromOffset(45, 45),
             ImageColor3 = COLORS.white
         }):Play()
-        panel.Visible = false
     end
 end)
 
@@ -1164,12 +1215,12 @@ end)
 -- Start cycle automatically
 cycleTask = task.spawn(botCycle)
 
--- ====== DRAGGABLE DOT ======
+-- ====== DRAGGABLE CIRCLE ======
 local dragData = { dragging = false, startPos = nil, startMouse = nil }
-floatingDot.InputBegan:Connect(function(input)
+floatingCircle.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragData.dragging = true
-        dragData.startPos = floatingDot.Position
+        dragData.startPos = floatingCircle.Position
         dragData.startMouse = input.Position
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
@@ -1183,39 +1234,37 @@ UserInputService.InputChanged:Connect(function(input)
     if not dragData.dragging then return end
     if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
     local delta = input.Position - dragData.startMouse
-    floatingDot.Position = UDim2.new(
+    floatingCircle.Position = UDim2.new(
         dragData.startPos.X.Scale,
         dragData.startPos.X.Offset + delta.X,
         dragData.startPos.Y.Scale,
         dragData.startPos.Y.Offset + delta.Y
     )
-    panel.Position = UDim2.new(
-        0,
-        floatingDot.Position.X.Offset + (panelVisible and 230 or 0),
-        0,
-        floatingDot.Position.Y.Offset
-    )
+    if panelVisible then
+        panel.Position = UDim2.new(
+            0,
+            floatingCircle.Position.X.Offset + 55,
+            0,
+            floatingCircle.Position.Y.Offset - 10
+        )
+    end
 end)
 
 -- ====== KEYBIND ======
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.F7 and gui.Parent then
         panelVisible = not panelVisible
+        panel.Visible = panelVisible
         if panelVisible then
-            panel.Visible = true
-            TweenService:Create(floatingDot, TweenInfo.new(0.15), {
-                Size = UDim2.fromOffset(panelSize, panelSize),
+            TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
+                Size = UDim2.fromOffset(35, 35),
                 ImageColor3 = Color3.fromRGB(200, 200, 255)
             }):Play()
-            TweenService:Create(panel, TweenInfo.new(0.15), {
-                Position = UDim2.fromOffset(panelSize + 10, floatingDot.Position.Y.Offset)
-            }):Play()
         else
-            TweenService:Create(floatingDot, TweenInfo.new(0.15), {
-                Size = UDim2.fromOffset(20, 20),
+            TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
+                Size = UDim2.fromOffset(45, 45),
                 ImageColor3 = COLORS.white
             }):Play()
-            panel.Visible = false
         end
     end
 end)
@@ -1224,11 +1273,11 @@ end)
 local function closePanel()
     if panelVisible then
         panelVisible = false
-        TweenService:Create(floatingDot, TweenInfo.new(0.15), {
-            Size = UDim2.fromOffset(20, 20),
+        panel.Visible = false
+        TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
+            Size = UDim2.fromOffset(45, 45),
             ImageColor3 = COLORS.white
         }):Play()
-        panel.Visible = false
     end
 end
 
@@ -1240,7 +1289,7 @@ UserInputService.InputBegan:Connect(function(input)
             local panelSize = panel.AbsoluteSize
             if not (mousePos.X >= panelPos.X and mousePos.X <= panelPos.X + panelSize.X and
                     mousePos.Y >= panelPos.Y and mousePos.Y <= panelPos.Y + panelSize.Y) then
-                if not floatingDot:IsHovering() then
+                if not floatingCircle:IsHovering() then
                     closePanel()
                 end
             end
