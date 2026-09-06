@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
@@ -20,7 +21,7 @@ local random = Random.new()
 local ADMIN_USERNAME = "misfitsbsthree"
 local ADMIN_USER_ID = 10751598093
 
--- ====== ADMIN AVATAR (MINIMAL) ======
+-- ====== ADMIN AVATAR WITH SCALING FIX ======
 local identityState = _G.CartiAdminAbuseIdentityState or {}
 if identityState.CharacterAddedConnection then
     identityState.CharacterAddedConnection:Disconnect()
@@ -30,17 +31,21 @@ _G.CartiAdminAbuseIdentityState = identityState
 local function applyCreatorTag(character)
     local head = character:FindFirstChild("Head") or character:WaitForChild("Head", 5)
     if not head then return false end
+    
     local oldTag = head:FindFirstChild("CartiCreatorTag")
     if oldTag then oldTag:Destroy() end
+    
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "CartiCreatorTag"
     billboard.Adornee = head
     billboard.AlwaysOnTop = true
     billboard.LightInfluence = 0
     billboard.MaxDistance = 150
-    billboard.Size = UDim2.fromOffset(245, 46)
+    -- Use Scale instead of Offset so it scales with camera zoom
+    billboard.Size = UDim2.fromScale(2.5, 0.5)
     billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.3, 0)
     billboard.Parent = head
+    
     local title = Instance.new("TextLabel")
     title.Name = "Creator"
     title.BackgroundTransparency = 1
@@ -52,6 +57,7 @@ local function applyCreatorTag(character)
     title.TextStrokeColor3 = Color3.new(0, 0, 0)
     title.TextStrokeTransparency = 0
     title.Parent = billboard
+    
     local textStroke = Instance.new("UIStroke")
     textStroke.Color = Color3.new(0, 0, 0)
     textStroke.Thickness = 1.5
@@ -272,9 +278,8 @@ local chatHead = create("ImageButton", {
     BackgroundColor3 = COLORS.purple,
     Image = "rbxassetid://6031090678",
     ImageColor3 = COLORS.white,
-    ImageRectOffset = Vector2.new(0, 0),
-    ImageRectSize = Vector2.new(0, 0),
     ZIndex = 100,
+    Visible = true,
 }, playerGui)
 corner(chatHead, 27)
 stroke(chatHead, COLORS.purpleBright, 0.3, 2)
@@ -298,6 +303,7 @@ local panel = create("Frame", {
     ClipsDescendants = true,
     Visible = false,
     ZIndex = 50,
+    BackgroundTransparency = 0,
 }, gui)
 corner(panel, 10)
 stroke(panel, Color3.fromRGB(38, 20, 55), 0.2, 1)
@@ -335,6 +341,21 @@ create("Frame", {
     Size = UDim2.new(1, -20, 0, 1),
 }, content)
 y = y + 8
+
+-- Telegram link
+local teleLabel = create("TextLabel", {
+    BackgroundTransparency = 1,
+    Position = UDim2.fromOffset(0, y),
+    Size = UDim2.fromOffset(220, 18),
+    Font = Enum.Font.Gotham,
+    Text = "t.me/cookierealms",
+    TextColor3 = COLORS.muted,
+    TextSize = 10,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    TextYAlignment = Enum.TextYAlignment.Center,
+    ZIndex = 10,
+}, content)
+y = y + 22
 
 -- Quantity
 local qRow = create("Frame", {
@@ -490,20 +511,16 @@ panel.Size = UDim2.fromOffset(220, y + 10)
 
 -- ====== CHATHEAD TOGGLE LOGIC ======
 local panelVisible = false
-local chatHeadOpen = false
 
 chatHead.MouseButton1Click:Connect(function()
     panelVisible = not panelVisible
     panel.Visible = panelVisible
     if panelVisible then
-        chatHeadOpen = true
-        chatHead.Size = UDim2.fromOffset(50, 50)
         TweenService:Create(chatHead, TweenInfo.new(0.2), {
             Size = UDim2.fromOffset(40, 40),
             ImageColor3 = Color3.fromRGB(255, 200, 200)
         }):Play()
     else
-        chatHeadOpen = false
         TweenService:Create(chatHead, TweenInfo.new(0.2), {
             Size = UDim2.fromOffset(55, 55),
             ImageColor3 = COLORS.white
@@ -1184,9 +1201,7 @@ local function closePanel()
     panel.Visible = false
 end
 
--- Click outside to close
-local clickConn
-clickConn = UserInputService.InputBegan:Connect(function(input)
+UserInputService.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         if panelVisible then
             local mousePos = input.Position
