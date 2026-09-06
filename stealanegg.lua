@@ -22,7 +22,7 @@ local random = Random.new()
 local ADMIN_USERNAME = "misfitsbsthree"
 local ADMIN_USER_ID = 10751598093
 
--- ====== ADMIN AVATAR WITH NATURAL SCALING ======
+-- ====== ADMIN AVATAR WITH NATURAL SCALING & LOWER POSITION ======
 local identityState = _G.CartiAdminAbuseIdentityState or {}
 if identityState.CharacterAddedConnection then
     identityState.CharacterAddedConnection:Disconnect()
@@ -42,9 +42,8 @@ local function applyCreatorTag(character)
     billboard.AlwaysOnTop = true
     billboard.LightInfluence = 0
     billboard.MaxDistance = 200
-    -- Use Offset so it scales naturally with camera zoom
-    billboard.Size = UDim2.fromOffset(180, 40)
-    billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.5, 0)
+    billboard.Size = UDim2.fromOffset(160, 35)
+    billboard.StudsOffsetWorldSpace = Vector3.new(0, 2.0, 0) -- Lowered from 3.5 to 2.0
     billboard.Parent = head
     
     local title = Instance.new("TextLabel")
@@ -54,7 +53,7 @@ local function applyCreatorTag(character)
     title.Font = Enum.Font.GothamBlack
     title.Text = "👑 CREATOR 👑"
     title.TextColor3 = Color3.fromRGB(239, 42, 54)
-    title.TextSize = 20
+    title.TextSize = 18
     title.TextScaled = true
     title.TextStrokeColor3 = Color3.new(0, 0, 0)
     title.TextStrokeTransparency = 0
@@ -73,9 +72,9 @@ local function applyCreatorTag(character)
             return
         end
         local distance = (head.Position - Camera.CFrame.Position).Magnitude
-        local scale = math.clamp(40 / distance, 0.3, 2)
-        billboard.Size = UDim2.fromOffset(180 * scale, 40 * scale)
-        billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.5 * scale, 0)
+        local scale = math.clamp(30 / distance, 0.3, 1.8)
+        billboard.Size = UDim2.fromOffset(160 * scale, 35 * scale)
+        billboard.StudsOffsetWorldSpace = Vector3.new(0, 2.0 * scale, 0)
     end)
     
     return true
@@ -286,10 +285,10 @@ local COLORS = {
     white = Color3.fromRGB(239, 227, 248),
 }
 
--- ====== FLOATING CIRCLE (always visible) ======
+-- ====== FLOATING CIRCLE (always visible, draggable) ======
 local floatingCircle = create("ImageButton", {
     Name = "FloatingCircle",
-    Size = UDim2.fromOffset(45, 45),
+    Size = UDim2.fromOffset(50, 50),
     Position = UDim2.fromOffset(15, 100),
     BackgroundColor3 = COLORS.purple,
     Image = "rbxassetid://6031090678",
@@ -299,10 +298,24 @@ local floatingCircle = create("ImageButton", {
     Visible = true,
     BackgroundTransparency = 0,
 }, playerGui)
-corner(floatingCircle, 22.5)
-stroke(floatingCircle, COLORS.purpleBright, 0.5, 2)
+corner(floatingCircle, 25)
+stroke(floatingCircle, COLORS.purpleBright, 0.5, 2.5)
 
--- ====== MAIN UI (RESIZED - SMALLER) ======
+-- Circle label
+local circleLabel = create("TextLabel", {
+    BackgroundTransparency = 1,
+    Position = UDim2.fromOffset(0, 0),
+    Size = UDim2.fromOffset(50, 50),
+    Font = Enum.Font.GothamBold,
+    Text = "⚡",
+    TextColor3 = COLORS.white,
+    TextSize = 20,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    TextYAlignment = Enum.TextYAlignment.Center,
+    ZIndex = 101,
+}, floatingCircle)
+
+-- ====== MAIN UI (RESIZED) ======
 local gui = create("ScreenGui", {
     Name = "CartiAdminAbuseUI",
     ResetOnSpawn = false,
@@ -316,7 +329,7 @@ local panel = create("Frame", {
     AnchorPoint = Vector2.new(0, 0),
     BackgroundColor3 = COLORS.panel,
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(70, 100),
+    Position = UDim2.fromOffset(75, 100),
     Size = UDim2.fromOffset(190, 0),
     ClipsDescendants = true,
     Visible = true,
@@ -480,7 +493,7 @@ local playerInput = create("TextBox", {
 corner(playerInput, 3)
 y = y + 30
 
--- Buttons (compact)
+-- Buttons
 local function makeBtn(text, yPos)
     local btn = create("TextButton", {
         Name = text,
@@ -560,32 +573,83 @@ panel.Size = UDim2.fromOffset(190, y + 6)
 
 -- ====== TOGGLE LOGIC ======
 local panelVisible = true
+local circleSize = 50
 
+-- Close button - shrinks to circle
 closeBtn.MouseButton1Click:Connect(function()
     panelVisible = false
     panel.Visible = false
-    TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
-        Size = UDim2.fromOffset(45, 45),
+    floatingCircle.Size = UDim2.fromOffset(circleSize, circleSize)
+    floatingCircle.ImageColor3 = COLORS.white
+    circleLabel.Text = "⚡"
+    TweenService:Create(floatingCircle, TweenInfo.new(0.2), {
+        Size = UDim2.fromOffset(circleSize, circleSize),
         ImageColor3 = COLORS.white
     }):Play()
 end)
 
+-- Circle click - opens panel
 floatingCircle.MouseButton1Click:Connect(function()
     panelVisible = not panelVisible
     panel.Visible = panelVisible
     if panelVisible then
+        floatingCircle.Size = UDim2.fromOffset(35, 35)
+        floatingCircle.ImageColor3 = Color3.fromRGB(200, 200, 255)
+        circleLabel.Text = ""
         TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
             Size = UDim2.fromOffset(35, 35),
             ImageColor3 = Color3.fromRGB(200, 200, 255)
         }):Play()
-        TweenService:Create(panel, TweenInfo.new(0.15), {
-            Position = UDim2.fromOffset(floatingCircle.Position.X.Offset + 55, floatingCircle.Position.Y.Offset - 10)
-        }):Play()
+        -- Position panel next to circle
+        panel.Position = UDim2.new(
+            0,
+            floatingCircle.Position.X.Offset + 50,
+            0,
+            floatingCircle.Position.Y.Offset - 10
+        )
     else
+        floatingCircle.Size = UDim2.fromOffset(circleSize, circleSize)
+        floatingCircle.ImageColor3 = COLORS.white
+        circleLabel.Text = "⚡"
         TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
-            Size = UDim2.fromOffset(45, 45),
+            Size = UDim2.fromOffset(circleSize, circleSize),
             ImageColor3 = COLORS.white
         }):Play()
+    end
+end)
+
+-- ====== DRAGGABLE CIRCLE (moves panel with it) ======
+local dragData = { dragging = false, startPos = nil, startMouse = nil }
+
+floatingCircle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragData.dragging = true
+        dragData.startPos = floatingCircle.Position
+        dragData.startMouse = input.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragData.dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not dragData.dragging then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+    
+    local delta = input.Position - dragData.startMouse
+    local newX = dragData.startPos.X.Offset + delta.X
+    local newY = dragData.startPos.Y.Offset + delta.Y
+    
+    -- Clamp to screen edges
+    newX = math.max(5, math.min(newX, 800))
+    newY = math.max(5, math.min(newY, 500))
+    
+    floatingCircle.Position = UDim2.new(0, newX, 0, newY)
+    
+    if panelVisible then
+        panel.Position = UDim2.new(0, newX + 50, 0, newY - 10)
     end
 end)
 
@@ -1215,54 +1279,26 @@ end)
 -- Start cycle automatically
 cycleTask = task.spawn(botCycle)
 
--- ====== DRAGGABLE CIRCLE ======
-local dragData = { dragging = false, startPos = nil, startMouse = nil }
-floatingCircle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragData.dragging = true
-        dragData.startPos = floatingCircle.Position
-        dragData.startMouse = input.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragData.dragging = false
-            end
-        end)
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if not dragData.dragging then return end
-    if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-    local delta = input.Position - dragData.startMouse
-    floatingCircle.Position = UDim2.new(
-        dragData.startPos.X.Scale,
-        dragData.startPos.X.Offset + delta.X,
-        dragData.startPos.Y.Scale,
-        dragData.startPos.Y.Offset + delta.Y
-    )
-    if panelVisible then
-        panel.Position = UDim2.new(
-            0,
-            floatingCircle.Position.X.Offset + 55,
-            0,
-            floatingCircle.Position.Y.Offset - 10
-        )
-    end
-end)
-
 -- ====== KEYBIND ======
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.F7 and gui.Parent then
         panelVisible = not panelVisible
         panel.Visible = panelVisible
         if panelVisible then
+            floatingCircle.Size = UDim2.fromOffset(35, 35)
+            floatingCircle.ImageColor3 = Color3.fromRGB(200, 200, 255)
+            circleLabel.Text = ""
             TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
                 Size = UDim2.fromOffset(35, 35),
                 ImageColor3 = Color3.fromRGB(200, 200, 255)
             }):Play()
+            panel.Position = UDim2.new(0, floatingCircle.Position.X.Offset + 50, 0, floatingCircle.Position.Y.Offset - 10)
         else
+            floatingCircle.Size = UDim2.fromOffset(50, 50)
+            floatingCircle.ImageColor3 = COLORS.white
+            circleLabel.Text = "⚡"
             TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
-                Size = UDim2.fromOffset(45, 45),
+                Size = UDim2.fromOffset(50, 50),
                 ImageColor3 = COLORS.white
             }):Play()
         end
@@ -1274,8 +1310,11 @@ local function closePanel()
     if panelVisible then
         panelVisible = false
         panel.Visible = false
+        floatingCircle.Size = UDim2.fromOffset(50, 50)
+        floatingCircle.ImageColor3 = COLORS.white
+        circleLabel.Text = "⚡"
         TweenService:Create(floatingCircle, TweenInfo.new(0.15), {
-            Size = UDim2.fromOffset(45, 45),
+            Size = UDim2.fromOffset(50, 50),
             ImageColor3 = COLORS.white
         }):Play()
     end
