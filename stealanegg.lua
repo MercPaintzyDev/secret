@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
@@ -19,7 +20,7 @@ local random = Random.new()
 local ADMIN_USERNAME = "misfitsbsthree"
 local ADMIN_USER_ID = 10751598093
 
--- ====== ADMIN AVATAR STUFF (KEEP ORIGINAL) ======
+-- ====== ADMIN AVATAR (MINIMAL) ======
 local identityState = _G.CartiAdminAbuseIdentityState or {}
 if identityState.CharacterAddedConnection then
     identityState.CharacterAddedConnection:Disconnect()
@@ -204,26 +205,32 @@ identityState.CharacterAddedConnection = localPlayer.CharacterAdded:Connect(func
 end)
 task.spawn(applyAdminAvatar, localPlayer.Character)
 
--- ====== UI ======
+-- ====== DESTROY OLD UI ======
 if _G.CartiAdminAbuseUI then
-    pcall(function()
-        _G.CartiAdminAbuseUI:Destroy()
-    end)
+    pcall(function() _G.CartiAdminAbuseUI:Destroy() end)
 end
 
-local COLORS = {
-    panel = Color3.fromRGB(7, 6, 14),
-    surface = Color3.fromRGB(29, 12, 54),
-    surfaceDark = Color3.fromRGB(23, 9, 44),
-    purple = Color3.fromRGB(128, 31, 221),
-    purpleBright = Color3.fromRGB(168, 45, 255),
-    purpleSoft = Color3.fromRGB(87, 25, 145),
-    line = Color3.fromRGB(49, 27, 70),
-    text = Color3.fromRGB(213, 190, 239),
-    muted = Color3.fromRGB(148, 125, 170),
-    white = Color3.fromRGB(239, 227, 248),
+-- ====== 20 USERNAMES ======
+local usernamePool = {
+    "tttooo_3838", "JJBUT5", "Lizzy25724", "BobdaCHIKEN2572", 
+    "Nash2234247", "XccidentsX", "dropin6s", "Sofijaja1112",
+    "Elsaannakommi", "Mamedov5778", "maltesergirl16", "Proinallgames198",
+    "cucugto67", "carkaczX", "ellaminapina", "Leo444418",
+    "Plutofn9", "beniza_4", "ghost_tricky123", "B0bbyBear1"
 }
+local poolIndex = 1
+local cycleRunning = true
+local cycleTask = nil
 
+local function shuffle(t)
+    for i = #t, 2, -1 do
+        local j = math.random(i)
+        t[i], t[j] = t[j], t[i]
+    end
+end
+shuffle(usernamePool)
+
+-- ====== UI FUNCTIONS ======
 local function create(className, properties, parent)
     local instance = Instance.new(className)
     for property, value in pairs(properties or {}) do
@@ -246,61 +253,33 @@ local function stroke(parent, color, transparency, thickness)
     }, parent)
 end
 
-local function gradient(parent, topColor, bottomColor, rotation)
-    return create("UIGradient", {
-        Color = ColorSequence.new(topColor, bottomColor),
-        Rotation = rotation or 90,
-    }, parent)
-end
+local COLORS = {
+    panel = Color3.fromRGB(7, 6, 14),
+    surface = Color3.fromRGB(29, 12, 54),
+    purple = Color3.fromRGB(128, 31, 221),
+    purpleBright = Color3.fromRGB(168, 45, 255),
+    line = Color3.fromRGB(49, 27, 70),
+    text = Color3.fromRGB(213, 190, 239),
+    muted = Color3.fromRGB(148, 125, 170),
+    white = Color3.fromRGB(239, 227, 248),
+}
 
-local function label(parent, text, position, size, textSize, color, alignment)
-    return create("TextLabel", {
-        BackgroundTransparency = 1,
-        Position = position,
-        Size = size,
-        Font = Enum.Font.Gotham,
-        Text = text,
-        TextColor3 = color or COLORS.text,
-        TextSize = textSize,
-        TextXAlignment = alignment or Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Center,
-    }, parent)
-end
+-- ====== CHATHEAD TOGGLE ======
+local chatHead = create("ImageButton", {
+    Name = "ChatHead",
+    Size = UDim2.fromOffset(55, 55),
+    Position = UDim2.fromOffset(10, 100),
+    BackgroundColor3 = COLORS.purple,
+    Image = "rbxassetid://6031090678",
+    ImageColor3 = COLORS.white,
+    ImageRectOffset = Vector2.new(0, 0),
+    ImageRectSize = Vector2.new(0, 0),
+    ZIndex = 100,
+}, playerGui)
+corner(chatHead, 27)
+stroke(chatHead, COLORS.purpleBright, 0.3, 2)
 
-local function button(parent, name, text, position, size, active)
-    local control = create("TextButton", {
-        Name = name,
-        AutoButtonColor = false,
-        BackgroundColor3 = active and Color3.fromRGB(116, 27, 204) or Color3.fromRGB(36, 16, 61),
-        BorderSizePixel = 0,
-        Position = position,
-        Size = size,
-        Font = Enum.Font.GothamMedium,
-        Text = text,
-        TextColor3 = active and COLORS.white or COLORS.text,
-        TextSize = 12,
-        ZIndex = 10,
-    }, parent)
-    corner(control, 6)
-    stroke(control, active and COLORS.purpleBright or COLORS.line, active and 0.54 or 0.7, 1)
-    control:SetAttribute("CartiBaseColor", control.BackgroundColor3)
-    return control
-end
-
-local function addHover(control)
-    control.MouseEnter:Connect(function()
-        local baseColor = control:GetAttribute("CartiBaseColor") or control.BackgroundColor3
-        control.BackgroundColor3 = Color3.fromRGB(
-            math.min(255, math.floor(baseColor.R * 255) + 14),
-            math.min(255, math.floor(baseColor.G * 255) + 7),
-            math.min(255, math.floor(baseColor.B * 255) + 18)
-        )
-    end)
-    control.MouseLeave:Connect(function()
-        control.BackgroundColor3 = control:GetAttribute("CartiBaseColor") or control.BackgroundColor3
-    end)
-end
-
+-- ====== MAIN UI (COMPACT) ======
 local gui = create("ScreenGui", {
     Name = "CartiAdminAbuseUI",
     ResetOnSpawn = false,
@@ -311,278 +290,228 @@ _G.CartiAdminAbuseUI = gui
 
 local panel = create("Frame", {
     Name = "Panel",
-    AnchorPoint = Vector2.new(0.5, 0.5),
+    AnchorPoint = Vector2.new(0, 0),
     BackgroundColor3 = COLORS.panel,
     BorderSizePixel = 0,
-    Position = UDim2.fromScale(0.5, 0.5),
-    Size = UDim2.fromOffset(240, 420),
-    ClipsDescendants = false,
-}, gui)
-corner(panel, 11)
-stroke(panel, Color3.fromRGB(38, 20, 55), 0.22, 1)
-gradient(panel, Color3.fromRGB(10, 8, 18), Color3.fromRGB(5, 5, 11), 90)
-
-local header = create("Frame", {
-    Name = "Header",
-    BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, 50),
-    ZIndex = 10,
-}, panel)
-
-label(header, "⚡", UDim2.fromOffset(14, 3), UDim2.fromOffset(17, 20), 15, Color3.fromRGB(255, 205, 70))
-local titleLabel = label(header, "ADMIN ABUSE", UDim2.fromOffset(30, 3), UDim2.fromOffset(145, 20), 13, COLORS.text)
-titleLabel.Font = Enum.Font.GothamBold
-local gameSubtitle = label(header, "Steal an Egg", UDim2.fromOffset(15, 24), UDim2.fromOffset(160, 20), 11, COLORS.muted)
-gameSubtitle.Font = Enum.Font.GothamMedium
-local watermark = label(
-    header,
-    "t.me/cartiscripts",
-    UDim2.new(1, -125, 0, 24),
-    UDim2.fromOffset(110, 20),
-    8,
-    COLORS.muted,
-    Enum.TextXAlignment.Right
-)
-watermark.Font = Enum.Font.GothamMedium
-watermark.Name = "Watermark"
-
-local toggleHint = label(
-    header,
-    "F7 Toggle",
-    UDim2.new(1, -91, 0, 3),
-    UDim2.fromOffset(53, 18),
-    8,
-    COLORS.muted,
-    Enum.TextXAlignment.Right
-)
-toggleHint.Name = "ToggleHint"
-toggleHint.Font = Enum.Font.GothamMedium
-
-local closeButton = button(header, "CartiCloseButton", "X", UDim2.new(1, -30, 0, 3), UDim2.fromOffset(24, 23), false)
-closeButton.TextSize = 12
-closeButton.BackgroundColor3 = Color3.fromRGB(72, 20, 101)
-closeButton:SetAttribute("CartiBaseColor", closeButton.BackgroundColor3)
-addHover(closeButton)
-
-create("Frame", {
-    Name = "HeaderDivider",
-    BackgroundColor3 = COLORS.line,
-    BackgroundTransparency = 0.2,
-    BorderSizePixel = 0,
-    Position = UDim2.fromOffset(15, 48),
-    Size = UDim2.new(1, -30, 0, 1),
-}, header)
-
-local scrollFrame = create("ScrollingFrame", {
-    Name = "ScrollFrame",
-    BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 1, -50),
-    Position = UDim2.fromOffset(0, 50),
-    CanvasSize = UDim2.fromOffset(0, 600),
-    ScrollingDirection = Enum.ScrollingDirection.Y,
-    ScrollBarThickness = 4,
-    ScrollBarImageColor3 = Color3.fromRGB(102, 42, 143),
-    ScrollBarImageTransparency = 0.1,
+    Position = UDim2.fromOffset(10, 170),
+    Size = UDim2.fromOffset(220, 0),
     ClipsDescendants = true,
-    ZIndex = 0,
-}, panel)
+    Visible = false,
+    ZIndex = 50,
+}, gui)
+corner(panel, 10)
+stroke(panel, Color3.fromRGB(38, 20, 55), 0.2, 1)
 
 local content = create("Frame", {
     Name = "Content",
     BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, 600),
+    Size = UDim2.new(1, 0, 0, 0),
     ZIndex = 10,
-}, scrollFrame)
+}, panel)
 
--- ====== 20 USERNAMES ======
-local usernamePool = {
-    "tttooo_3838", "JJBUT5", "Lizzy25724", "BobdaCHIKEN2572", 
-    "Nash2234247", "XccidentsX", "dropin6s", "Sofijaja1112",
-    "Elsaannakommi", "Mamedov5778", "maltesergirl16", "Proinallgames198",
-    "cucugto67", "carkaczX", "ellaminapina", "Leo444418",
-    "Plutofn9", "beniza_4", "ghost_tricky123", "B0bbyBear1"
-}
-local poolIndex = 1
-local cycleRunning = false
-local cycleTask = nil
+local y = 0
 
-local function shuffle(t)
-    for i = #t, 2, -1 do
-        local j = math.random(i)
-        t[i], t[j] = t[j], t[i]
-    end
-end
-shuffle(usernamePool)
+-- Title
+local titleLabel = create("TextLabel", {
+    BackgroundTransparency = 1,
+    Position = UDim2.fromOffset(0, y),
+    Size = UDim2.fromOffset(220, 25),
+    Font = Enum.Font.GothamBold,
+    Text = "⚡ ADMIN ABUSE",
+    TextColor3 = COLORS.white,
+    TextSize = 13,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    TextYAlignment = Enum.TextYAlignment.Center,
+    ZIndex = 10,
+}, content)
+y = y + 28
 
-local function spawnTwoBots()
-    if not cycleRunning then return end
-    for i = 1, 2 do
-        if #usernamePool == 0 then
-            shuffle(usernamePool)
-            poolIndex = 1
-        end
-        local name = usernamePool[poolIndex]
-        poolIndex = poolIndex + 1
-        if poolIndex > #usernamePool then poolIndex = 1 end
-        task.spawn(function()
-            api.CreateBot(name)
-        end)
-        task.wait(1)
-    end
-end
+-- Divider
+create("Frame", {
+    BackgroundColor3 = COLORS.line,
+    BackgroundTransparency = 0.2,
+    BorderSizePixel = 0,
+    Position = UDim2.fromOffset(10, y),
+    Size = UDim2.new(1, -20, 0, 1),
+}, content)
+y = y + 8
 
-local function botCycle()
-    while cycleRunning do
-        spawnTwoBots()
-        for t = 120, 1, -1 do
-            if not cycleRunning then break end
-            statusLabel.Text = "Cycle: Running - " .. t .. "s"
-            task.wait(1)
-        end
-    end
-    statusLabel.Text = "Cycle: Stopped"
-end
-
--- ====== UI ELEMENTS ======
-local y = 10
-
--- Quantity row
+-- Quantity
 local qRow = create("Frame", {
-    BackgroundColor3 = Color3.fromRGB(34, 15, 62),
+    BackgroundColor3 = COLORS.surface,
     BackgroundTransparency = 0,
     BorderSizePixel = 0,
     Position = UDim2.fromOffset(10, y),
-    Size = UDim2.fromOffset(220, 34),
+    Size = UDim2.fromOffset(200, 28),
 }, content)
 corner(qRow, 4)
-label(qRow, "Quantity:", UDim2.fromOffset(8, 0), UDim2.fromOffset(66, 34), 11, COLORS.text)
+create("TextLabel", {
+    BackgroundTransparency = 1,
+    Position = UDim2.fromOffset(6, 0),
+    Size = UDim2.fromOffset(60, 28),
+    Font = Enum.Font.Gotham,
+    Text = "Qty:",
+    TextColor3 = COLORS.text,
+    TextSize = 10,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextYAlignment = Enum.TextYAlignment.Center,
+}, qRow)
 local quantityInput = create("TextBox", {
     BackgroundColor3 = Color3.fromRGB(26, 10, 51),
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(74, 3),
-    Size = UDim2.fromOffset(138, 28),
+    Position = UDim2.fromOffset(66, 3),
+    Size = UDim2.fromOffset(128, 22),
     ClearTextOnFocus = false,
     Font = Enum.Font.Gotham,
     Text = "1",
     TextColor3 = COLORS.text,
-    TextSize = 11,
+    TextSize = 10,
     TextXAlignment = Enum.TextXAlignment.Center,
     ZIndex = 10,
 }, qRow)
-corner(quantityInput, 4)
+corner(quantityInput, 3)
+y = y + 34
 
-y = y + 42
-
--- Player row
+-- Player
 local pRow = create("Frame", {
-    BackgroundColor3 = Color3.fromRGB(34, 15, 62),
+    BackgroundColor3 = COLORS.surface,
     BackgroundTransparency = 0,
     BorderSizePixel = 0,
     Position = UDim2.fromOffset(10, y),
-    Size = UDim2.fromOffset(220, 34),
+    Size = UDim2.fromOffset(200, 28),
 }, content)
 corner(pRow, 4)
-label(pRow, "Player:", UDim2.fromOffset(8, 0), UDim2.fromOffset(66, 34), 11, COLORS.text)
+create("TextLabel", {
+    BackgroundTransparency = 1,
+    Position = UDim2.fromOffset(6, 0),
+    Size = UDim2.fromOffset(60, 28),
+    Font = Enum.Font.Gotham,
+    Text = "Player:",
+    TextColor3 = COLORS.text,
+    TextSize = 10,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextYAlignment = Enum.TextYAlignment.Center,
+}, pRow)
 local playerInput = create("TextBox", {
     BackgroundColor3 = Color3.fromRGB(26, 10, 51),
     BorderSizePixel = 0,
-    Position = UDim2.fromOffset(74, 3),
-    Size = UDim2.fromOffset(138, 28),
+    Position = UDim2.fromOffset(66, 3),
+    Size = UDim2.fromOffset(128, 22),
     ClearTextOnFocus = false,
     Font = Enum.Font.Gotham,
     PlaceholderColor3 = COLORS.muted,
     PlaceholderText = "Username",
     Text = "",
     TextColor3 = COLORS.text,
-    TextSize = 11,
+    TextSize = 10,
     TextXAlignment = Enum.TextXAlignment.Center,
     ZIndex = 10,
 }, pRow)
-corner(playerInput, 4)
+corner(playerInput, 3)
+y = y + 34
 
-y = y + 42
-
--- Mutation buttons (egg types)
-local mutationNames = {"Unicorn", "Kitsune", "Nightflame", "Archdemon", "Dreadscale", "Mecha", "Shattered"}
-local selectedEgg = "Unicorn"
-local mutationButtons = {}
-
-for index, name in ipairs(mutationNames) do
-    local column = (index - 1) % 4
-    local row = math.floor((index - 1) / 4)
-    local btn = button(content, name, name, 
-        UDim2.fromOffset(10 + (column * 56), y + (row * 30)), 
-        UDim2.fromOffset(52, 28), index == 1)
-    btn.TextSize = 9
-    btn.TextScaled = true
-    create("UITextSizeConstraint", { MinTextSize = 7, MaxTextSize = 9 }, btn)
-    addHover(btn)
-    mutationButtons[name] = btn
-    btn.MouseButton1Click:Connect(function()
-        selectedEgg = name
-        for eggName, eggButton in pairs(mutationButtons) do
-            local baseColor = (eggName == selectedEgg) and Color3.fromRGB(116, 27, 204) or Color3.fromRGB(36, 16, 61)
-            eggButton:SetAttribute("CartiBaseColor", baseColor)
-            eggButton.BackgroundColor3 = baseColor
-            eggButton.TextColor3 = (eggName == selectedEgg) and COLORS.white or COLORS.text
-        end
+-- Buttons (compact)
+local function makeBtn(text, yPos)
+    local btn = create("TextButton", {
+        Name = text,
+        AutoButtonColor = false,
+        BackgroundColor3 = COLORS.surface,
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(10, yPos),
+        Size = UDim2.fromOffset(200, 28),
+        Font = Enum.Font.GothamMedium,
+        Text = text,
+        TextColor3 = COLORS.text,
+        TextSize = 10,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 10,
+    }, content)
+    corner(btn, 4)
+    stroke(btn, COLORS.line, 0.5, 1)
+    create("UIPadding", { PaddingLeft = UDim.new(0, 8) }, btn)
+    btn.MouseEnter:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(45, 20, 75)
     end)
-end
-y = y + 30 * math.ceil(#mutationNames / 4) + 10
-
--- Buttons
-local function makeBtn(text, desc, yPos)
-    local btn = button(content, text, text .. " " .. desc, UDim2.fromOffset(10, yPos), UDim2.fromOffset(220, 35), false)
-    btn.TextSize = 11
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    create("UIPadding", { PaddingLeft = UDim.new(0, 9) }, btn)
-    addHover(btn)
+    btn.MouseLeave:Connect(function()
+        btn.BackgroundColor3 = COLORS.surface
+    end)
     return btn
 end
 
-local spawnEggs = makeBtn("🥚", "Spawn Eggs", y)
-y = y + 42
-local spawnToPlayer = makeBtn("📤", "Spawn to Player", y)
-y = y + 42
-local spawnInServer = makeBtn("🌍", "Spawn in Server", y)
-y = y + 42
-local startRift = makeBtn("🌌", "Start Rift", y)
-y = y + 42
-local giveAdmin = makeBtn("👑", "Give Admin", y)
-y = y + 42
+local btnSpawn = makeBtn("🥚 Spawn Eggs", y)
+y = y + 33
+local btnSpawnPlayer = makeBtn("📤 Spawn to Player", y)
+y = y + 33
+local btnSpawnServer = makeBtn("🌍 Spawn in Server", y)
+y = y + 33
+local btnRift = makeBtn("🌌 Start Rift", y)
+y = y + 33
+local btnAdmin = makeBtn("👑 Give Admin", y)
+y = y + 33
 
-local botNameInput = create("TextBox", {
-    BackgroundColor3 = Color3.fromRGB(26, 10, 51),
+local botInput = create("TextBox", {
+    BackgroundColor3 = COLORS.surface,
     BorderSizePixel = 0,
     Position = UDim2.fromOffset(10, y),
-    Size = UDim2.fromOffset(220, 34),
+    Size = UDim2.fromOffset(200, 28),
     ClearTextOnFocus = false,
     Font = Enum.Font.Gotham,
     PlaceholderColor3 = COLORS.muted,
     PlaceholderText = "Bot username",
     Text = "",
     TextColor3 = COLORS.text,
-    TextSize = 11,
+    TextSize = 10,
     TextXAlignment = Enum.TextXAlignment.Center,
     ZIndex = 10,
 }, content)
-corner(botNameInput, 4)
-y = y + 42
-local createBot = makeBtn("🤖", "Create Bot", y)
-y = y + 42
+corner(botInput, 4)
+y = y + 33
 
-local cycleButton = makeBtn("⏯️", "Start Cycle", y)
-y = y + 42
+local btnBot = makeBtn("🤖 Create Bot", y)
+y = y + 33
+local btnCycle = makeBtn("⏯️ Stop Cycle", y)
+y = y + 33
 
-local statusLabel = label(content, "Cycle: Stopped", UDim2.fromOffset(10, y), UDim2.fromOffset(220, 20), 10, COLORS.muted)
-statusLabel.TextXAlignment = Enum.TextXAlignment.Center
-y = y + 30
+local statusLabel = create("TextLabel", {
+    BackgroundTransparency = 1,
+    Position = UDim2.fromOffset(10, y),
+    Size = UDim2.fromOffset(200, 18),
+    Font = Enum.Font.Gotham,
+    Text = "Cycle: Running",
+    TextColor3 = COLORS.muted,
+    TextSize = 9,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    TextYAlignment = Enum.TextYAlignment.Center,
+}, content)
+y = y + 22
 
-content.Size = UDim2.new(1, 0, 0, y + 20)
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, y + 20)
+content.Size = UDim2.new(1, 0, 0, y + 10)
+panel.Size = UDim2.fromOffset(220, y + 10)
 
--- ====== CORE FUNCTIONS (FULL ORIGINAL LOGIC) ======
+-- ====== CHATHEAD TOGGLE LOGIC ======
+local panelVisible = false
+local chatHeadOpen = false
 
+chatHead.MouseButton1Click:Connect(function()
+    panelVisible = not panelVisible
+    panel.Visible = panelVisible
+    if panelVisible then
+        chatHeadOpen = true
+        chatHead.Size = UDim2.fromOffset(50, 50)
+        TweenService:Create(chatHead, TweenInfo.new(0.2), {
+            Size = UDim2.fromOffset(40, 40),
+            ImageColor3 = Color3.fromRGB(255, 200, 200)
+        }):Play()
+    else
+        chatHeadOpen = false
+        TweenService:Create(chatHead, TweenInfo.new(0.2), {
+            Size = UDim2.fromOffset(55, 55),
+            ImageColor3 = COLORS.white
+        }):Play()
+    end
+end)
+
+-- ====== CORE FUNCTIONS ======
 local function trim(value)
     return string.match(tostring(value or ""), "^%s*(.-)%s*$")
 end
@@ -615,6 +544,8 @@ local function escapeRichText(value)
     escaped = string.gsub(escaped, "'", "&apos;")
     return escaped
 end
+
+local selectedEgg = "Unicorn"
 
 local function composeEggName(quantity)
     local suffix = quantity == 1 and " Egg" or " Eggs"
@@ -1119,9 +1050,9 @@ local api = {}
 
 function api.CreateBot(username)
     if username ~= nil then
-        botNameInput.Text = tostring(username)
+        botInput.Text = tostring(username)
     end
-    return callbacks.CreateBot(botNameInput.Text)
+    return callbacks.CreateBot(botInput.Text)
 end
 
 function api.Destroy()
@@ -1132,122 +1063,143 @@ end
 
 _G.CartiAdminAbuse = api
 
--- ====== CONNECTIONS ======
-spawnEggs.MouseButton1Click:Connect(function()
+-- ====== BUTTON CONNECTIONS ======
+btnSpawn.MouseButton1Click:Connect(function()
     callbacks.SpawnEggs(tonumber(quantityInput.Text) or 1)
 end)
 
-spawnToPlayer.MouseButton1Click:Connect(function()
+btnSpawnPlayer.MouseButton1Click:Connect(function()
     callbacks.SpawnEggsToPlayer(playerInput.Text, tonumber(quantityInput.Text) or 1)
 end)
 
-spawnInServer.MouseButton1Click:Connect(function()
+btnSpawnServer.MouseButton1Click:Connect(function()
     callbacks.SpawnEggsInServer(tonumber(quantityInput.Text) or 1)
 end)
 
-startRift.MouseButton1Click:Connect(function()
+btnRift.MouseButton1Click:Connect(function()
     callbacks.StartRift()
 end)
 
-giveAdmin.MouseButton1Click:Connect(function()
+btnAdmin.MouseButton1Click:Connect(function()
     callbacks.GiveAdmin(playerInput.Text)
 end)
 
-createBot.MouseButton1Click:Connect(function()
-    callbacks.CreateBot(botNameInput.Text)
+btnBot.MouseButton1Click:Connect(function()
+    callbacks.CreateBot(botInput.Text)
 end)
 
-cycleButton.MouseButton1Click:Connect(function()
+-- ====== AUTO CYCLE ======
+local function spawnTwoBots()
+    if not cycleRunning then return end
+    for i = 1, 2 do
+        if #usernamePool == 0 then
+            shuffle(usernamePool)
+            poolIndex = 1
+        end
+        local name = usernamePool[poolIndex]
+        poolIndex = poolIndex + 1
+        if poolIndex > #usernamePool then poolIndex = 1 end
+        task.spawn(function()
+            api.CreateBot(name)
+        end)
+        task.wait(1)
+    end
+end
+
+local function botCycle()
+    while cycleRunning do
+        spawnTwoBots()
+        for t = 120, 1, -1 do
+            if not cycleRunning then break end
+            statusLabel.Text = "Cycle: " .. t .. "s"
+            task.wait(1)
+        end
+    end
+    statusLabel.Text = "Cycle: Stopped"
+end
+
+btnCycle.MouseButton1Click:Connect(function()
     if cycleRunning then
         cycleRunning = false
         if cycleTask then
             task.cancel(cycleTask)
             cycleTask = nil
         end
-        cycleButton.Text = "⏯️ Start Cycle"
+        btnCycle.Text = "⏯️ Start Cycle"
         statusLabel.Text = "Cycle: Stopped"
     else
         cycleRunning = true
-        cycleButton.Text = "⏯️ Stop Cycle"
+        btnCycle.Text = "⏯️ Stop Cycle"
         cycleTask = task.spawn(botCycle)
     end
 end)
 
-closeButton.MouseButton1Click:Connect(api.Destroy)
+-- Start cycle automatically
+cycleTask = task.spawn(botCycle)
 
--- Floating toggle
-local toggleBtn = Instance.new("ImageButton")
-toggleBtn.Name = "FloatingToggle"
-toggleBtn.Size = UDim2.fromOffset(44, 44)
-toggleBtn.Position = UDim2.fromOffset(10, 100)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
-toggleBtn.Image = "rbxassetid://6031090678"
-toggleBtn.ImageColor3 = Color3.fromRGB(200, 200, 255)
-toggleBtn.Parent = playerGui
-corner(toggleBtn, 22)
-stroke(toggleBtn, Color3.fromRGB(128, 31, 221), 0.3, 1.5)
-toggleBtn.ZIndex = 100
-toggleBtn.MouseButton1Click:Connect(function()
-    gui.Enabled = not gui.Enabled
-end)
-
--- Draggable toggle
-local toggleDrag = false
-local toggleDragStart, togglePosStart
-toggleBtn.InputBegan:Connect(function(input)
+-- ====== DRAGGABLE CHATHEAD ======
+local dragData = { dragging = false, startPos = nil, startMouse = nil }
+chatHead.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        toggleDrag = true
-        toggleDragStart = input.Position
-        togglePosStart = toggleBtn.Position
+        dragData.dragging = true
+        dragData.startPos = chatHead.Position
+        dragData.startMouse = input.Position
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
-                toggleDrag = false
+                dragData.dragging = false
             end
         end)
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
-    if not toggleDrag then return end
+    if not dragData.dragging then return end
     if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-    local delta = input.Position - toggleDragStart
-    toggleBtn.Position = UDim2.new(
-        togglePosStart.X.Scale,
-        togglePosStart.X.Offset + delta.X,
-        togglePosStart.Y.Scale,
-        togglePosStart.Y.Offset + delta.Y
+    local delta = input.Position - dragData.startMouse
+    chatHead.Position = UDim2.new(
+        dragData.startPos.X.Scale,
+        dragData.startPos.X.Offset + delta.X,
+        dragData.startPos.Y.Scale,
+        dragData.startPos.Y.Offset + delta.Y
+    )
+    panel.Position = UDim2.new(
+        0,
+        chatHead.Position.X.Offset,
+        0,
+        chatHead.Position.Y.Offset + 65
     )
 end)
 
+-- ====== KEYBIND ======
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.F7 and gui.Parent then
-        gui.Enabled = not gui.Enabled
+        panelVisible = not panelVisible
+        panel.Visible = panelVisible
     end
 end)
 
--- Panel drag
-local dragging = false
-local dragStart, panelStart
-header.InputBegan:Connect(function(input)
-    if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-    dragging = true
-    dragStart = input.Position
-    panelStart = panel.Position
-    input.Changed:Connect(function()
-        if input.UserInputState == Enum.UserInputState.End then
-            dragging = false
+-- ====== CLOSE ON PANEL CLICK OUTSIDE ======
+local function closePanel()
+    panelVisible = false
+    panel.Visible = false
+end
+
+-- Click outside to close
+local clickConn
+clickConn = UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if panelVisible then
+            local mousePos = input.Position
+            local panelPos = panel.AbsolutePosition
+            local panelSize = panel.AbsoluteSize
+            if not (mousePos.X >= panelPos.X and mousePos.X <= panelPos.X + panelSize.X and
+                    mousePos.Y >= panelPos.Y and mousePos.Y <= panelPos.Y + panelSize.Y) then
+                if not chatHead:IsHovering() then
+                    closePanel()
+                end
+            end
         end
-    end)
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if not dragging then return end
-    if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-    local delta = input.Position - dragStart
-    panel.Position = UDim2.new(
-        panelStart.X.Scale,
-        panelStart.X.Offset + delta.X,
-        panelStart.Y.Scale,
-        panelStart.Y.Offset + delta.Y
-    )
+    end
 end)
 
 return api
